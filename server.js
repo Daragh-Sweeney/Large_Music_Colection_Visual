@@ -39,7 +39,8 @@ function getLocalIP() {
 
 // set up the hompage url and add spotify credentials
 const localIP = getLocalIP();
-const redirect_uri = `http://${localIP}:3000/callback`;
+const localPort = 3000;
+const redirect_uri = `http://${localIP}:${localPort}/callback`;
 const client_id = "dfa9b1026a55431a82843e90bd11c2b9";
 const client_secret = "4dcedf731869434c86ea3efdf58b7aa7";
 
@@ -168,10 +169,7 @@ app.get('/logout', (req, res) => {
   });
 });
 
-
-
-
-let listener = app.listen(3000, '0.0.0.0', function () {
-  console.log(`Your app is listening on http://${localIP}:${listener.address().port}`);
+let listener = app.listen(`${localPort}`, `${localIP}`, function () {
+  console.log(`Your app is listening on http://${listener.address().address}:${listener.address().port}`);
   console.log("To access from other devices on the same network, use this address");
 });
