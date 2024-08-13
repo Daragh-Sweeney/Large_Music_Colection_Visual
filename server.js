@@ -150,7 +150,7 @@ app.get('/getGenre', (req, res) => {
 
   pythonProcess.stderr.on('data', (data) => {
     console.error(`Error from Python script: ${data}`);
-    res.status(500).send(`Error from Python script: ${data}`);
+    // res.status(500).send(`Error from Python script: ${data}`);
   });
 });
 
