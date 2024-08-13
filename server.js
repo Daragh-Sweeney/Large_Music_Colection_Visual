@@ -135,7 +135,7 @@ app.get('/getGenre', (req, res) => {
 
   if (!previewUrl) {return res.status(400).send('Missing previewUrl parameter');}
 
-  const pythonPath = '/Library/Frameworks/Python.framework/Versions/3.10/bin/python3';  // Update to your correct Python path
+  const pythonPath = 'python3';  // Update to your correct Python path
   const scriptPath = path.join(__dirname, '/models/getGenre.py');
   const pythonProcess = spawn(pythonPath, [scriptPath, previewUrl]);
 
