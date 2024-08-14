@@ -1,0 +1,16 @@
+services:
+  universe-of-music:
+    build: .
+    image: localhost/universe-of-music:latest
+    ports:
+      - "3000:3000"
+    environment:
+      REDIRECT_HOSTNAME: localhost:3000
+    secrets:
+      - spotify-client_id
+      - spotify-client_secret
+secrets:
+  spotify-client_id:
+    file: ./secrets/spotify-client_id.txt
+  spotify-client_secret:
+    file: ./secrets/spotify-client_secret.txt
