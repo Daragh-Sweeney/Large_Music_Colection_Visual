@@ -1,3 +1,5 @@
+kustomization.yaml
+
 # Logs
 logs
 *.log

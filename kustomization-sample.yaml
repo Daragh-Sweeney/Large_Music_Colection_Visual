@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: uom
+resources:
+- k8s-manifest.yaml
+secretGenerator:
+- name: spotify-credentials
+  literals:
+  - client_id=<replace-with-client_id>
+  - client_secret=<replace-with-client_secret>
+configMapGenerator:
+- name: network-config
+  literals:
+  - REDIRECT_HOSTNAME=universe.localhost:3000
+
