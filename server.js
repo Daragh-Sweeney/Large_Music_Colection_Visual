@@ -9,6 +9,8 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
+import { env } from 'node:process';
+import fs from 'node:fs/promises';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,9 +42,10 @@ function getLocalIP() {
 // set up the hompage url and add spotify credentials
 const localIP = getLocalIP();
 const localPort = 3000;
-const redirect_uri = `http://${localIP}:${localPort}/callback`;
-const client_id = "dfa9b1026a55431a82843e90bd11c2b9";
-const client_secret = "4dcedf731869434c86ea3efdf58b7aa7";
+const hostname = env.REDIRECT_HOSTNAME || `${localIP}:${localPort}`;
+const redirect_uri = `http://${hostname}/callback`;
+const client_id = await fs.readFile('/run/secrets/spotify-client_id', { encoding: 'utf8' });
+const client_secret = await fs.readFile('/run/secrets/spotify-client_secret', { encoding: 'utf8' });
 
 app.get("/", (req, res) => {
   res.render("index");
