@@ -1,3 +1,7 @@
+#  Author: Daragh Sweeney
+#  Project: Large Music Data Visualization
+#  getGenre.py: This file controls the feature extraction for both the CNN and the PCA algorithm
+
 import sys
 import json
 import random
@@ -21,7 +25,7 @@ logging.basicConfig(filename='models/getGenre.log', level=logging.ERROR, format=
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.get_logger().setLevel('ERROR')
 
-# Suppress specific UserWarnings
+# Suppress specific UserWarnings, this was to make sure they were not sent to server
 warnings.filterwarnings('ignore', category=UserWarning, message='.*input_shape.*')
 warnings.filterwarnings('ignore', category=UserWarning, message='.*Argument `alpha` is deprecated.*')
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -31,16 +35,19 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 mp3_urls = sys.argv[1].split(',')
 categories = ["rock", "pop", "classical", "hiphop", "country", "latin", "edm_dance", "jazz"]
 
+# PCA fUNCTION
 def perform_pca(features):
+
+    # The features are normalised before being placed into the PCA model
     scaler = StandardScaler()
     normalized_features = scaler.fit_transform(features)
-
     pca = PCA(n_components=2)
     pca_result = pca.fit_transform(normalized_features)
 
     return pca_result
 
 
+# Function to spread pca results around a circle
 def spread_points(pca_results, min_distance=200, max_distance=1000):
     # Convert to polar coordinates
     r = np.sqrt(pca_results[:, 0]**2 + pca_results[:, 1]**2)
@@ -58,12 +65,14 @@ def spread_points(pca_results, min_distance=200, max_distance=1000):
 
     return x, z
 
+
+# Fuction to extract music features from music
 def getAudioFeatures(filePath, duration=5, noise_factor=0.005):
     try:
         y, sr = librosa.load(filePath, duration=duration)
         y_noisy = y + noise_factor * np.random.normal(size=y.shape)
 
-        # Mel spectrogram - this will be used for the classifier
+        # Mel spectrogram - this will be used for the CNN classifier
         mel_spec = librosa.feature.melspectrogram(y=y_noisy, sr=sr, n_mels=64)
         total_frames = mel_spec.shape[1]
         start_idx = random.randint(0, max(total_frames - 256, 0))
@@ -95,15 +104,7 @@ def getAudioFeatures(filePath, duration=5, noise_factor=0.005):
 
     return mel_spec_db, tempo, rms, beat_strength, spectral_centroid, spectral_rolloff, zero_crossing_rate, chroma
 
-def calculate_position(loudness):
-    min_distance = 200
-    max_distance = 1300
-    distance = min_distance + (max_distance - min_distance) * loudness
-    theta = random.random() * math.pi * 2
-    phi = math.acos(random.random() * 2 - 1)
-    x = distance * math.sin(phi) * math.cos(theta)
-    z = distance * math.cos(phi)
-    return x, z
+
 
 
 def process_song(mp3_url):
@@ -119,8 +120,6 @@ def process_song(mp3_url):
         predicted_genre = categories[predicted_genre_index]
 
         os.remove(file_path)
-        x, z = calculate_position(rms)
-
 
 
         return {
@@ -144,10 +143,11 @@ def process_song(mp3_url):
         return {
             'url': mp3_url,
             'genre': 'Error',
-            'tempo': 0,
-            'loudness': 0,
-            'x': 0,
-            'z': 0
+            'features': [
+                float(0),float(0),float(np.mean(0)),
+                float(np.max(0)),float(0),float(0),
+                float(0),float(0),float(np.mean(0))
+            ]
         }
 
 # Handle SSL context
@@ -159,7 +159,7 @@ else:
     ssl._create_default_https_context = _create_unverified_https_context
 
 # Load the model
-loaded_model = load_model('models/genre_model2.h5', compile=False)
+loaded_model = load_model('models/genre_model.h5', compile=False)
 
 # Process all songs
 results = []

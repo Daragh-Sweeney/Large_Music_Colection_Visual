@@ -1,3 +1,7 @@
+//  Author: Daragh Sweeney
+//  Project: Large Music Data Visualization
+//  server.js: this is the main server file that controls the application
+
 import express from 'express';
 import fetch from 'node-fetch';
 import session from 'express-session';
@@ -8,21 +12,16 @@ import os from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const app = express();
-
-app.use(session({
-  secret: 'your-secret-key',
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false }
-}));
+app.use(session({secret: 'your-secret-key',resave: false,saveUninitialized: true,cookie: { secure: false }}));
 
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 
 app.use(express.static(__dirname));
 
+
+// function to get the local IP of the machine
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
   for (const devName in interfaces) {
@@ -37,6 +36,8 @@ function getLocalIP() {
   return '0.0.0.0';
 }
 
+
+// set up the hompage url and add spotify credentials
 const localIP = getLocalIP();
 const redirect_uri = `http://${localIP}:3000/callback`;
 const client_id = "dfa9b1026a55431a82843e90bd11c2b9";
@@ -46,6 +47,8 @@ app.get("/", (req, res) => {
   res.render("index");
 });
 
+
+// set up the route to the spotify authorisation process
 app.get("/authorize", (req, res) => {
   var auth_query_parameters = new URLSearchParams({
     response_type: "code",
@@ -57,6 +60,8 @@ app.get("/authorize", (req, res) => {
   res.redirect("https://accounts.spotify.com/authorize?" + auth_query_parameters.toString());
 });
 
+
+//
 app.get("/callback", async (req, res) => {
   const code = req.query.code;
 
@@ -81,38 +86,53 @@ app.get("/callback", async (req, res) => {
   res.redirect("/dashboard");
 });
 
-async function getData(endpoint, access_token) {
-  const response = await fetch("https://api.spotify.com/v1" + endpoint, {
-    method: "get",
-    headers: {
-      Authorization: "Bearer " + access_token,
-    },
-  });
 
-  const data = await response.json();
-  return data;
+// This is a helper function that will make calls to the spotify API
+async function getData(endpoint, access_token) {
+  try {
+    const response = await fetch("https://api.spotify.com/v1" + endpoint, {
+      method: "get",
+      headers: { Authorization: "Bearer " + access_token },
+    });
+
+    if (!response.ok) {
+      // Check if the access token is invalid or expired
+      if (response.status === 401) {
+        throw new Error("Invalid or expired access token");
+      }
+      throw new Error(`HTTP error ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    throw error;
+  }
 }
 
-app.get("/dashboard", async (req, res) => {
-  const access_token = req.session.access_token;
-  if (!access_token) {
-    return res.redirect('/');
-  }
 
+// This is the route to the dashboard page
+app.get("/dashboard", async (req, res) => {
+
+  const access_token = req.session.access_token;
+  if (!access_token) {return res.redirect('/');}
+
+  // get users info and tracks from the spotify API and pass into the dashboard page
   const userInfo = await getData("/me", access_token);
   const tracks = await getData("/me/tracks?limit=50", access_token);
-
   res.render("dashboard", { user: userInfo, tracks: tracks.items });
 });
 
+
+
+
+
+// this is the getGenre
 app.get('/getGenre', (req, res) => {
   const { previewUrl } = req.query;
 
-  if (!previewUrl) {
-    return res.status(400).send('Missing previewUrl parameter');
-  }
-
-  //console.log(`Received previewUrl: ${previewUrl}`);
+  if (!previewUrl) {return res.status(400).send('Missing previewUrl parameter');}
 
   const pythonPath = '/Library/Frameworks/Python.framework/Versions/3.10/bin/python3';  // Update to your correct Python path
   const scriptPath = path.join(__dirname, '/models/getGenre.py');
@@ -120,9 +140,7 @@ app.get('/getGenre', (req, res) => {
 
   let pythonOutput = '';
 
-  pythonProcess.stdout.on('data', (data) => {
-    pythonOutput += data.toString();
-  });
+  pythonProcess.stdout.on('data', (data) => {pythonOutput += data.toString();});
 
   pythonProcess.stdout.on('end', () => {
     console.log(`Python script output: ${pythonOutput}`);
@@ -135,6 +153,10 @@ app.get('/getGenre', (req, res) => {
   });
 });
 
+
+
+
+
 app.get('/logout', (req, res) => {
   req.session.destroy(err => {
     if (err) {
@@ -145,6 +167,9 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
   });
 });
+
+
+
 
 let listener = app.listen(3000, '0.0.0.0', function () {
   console.log(`Your app is listening on http://${localIP}:${listener.address().port}`);

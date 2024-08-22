@@ -12,18 +12,20 @@ const lineMaterial = new THREE.LineBasicMaterial({ color: 0xaaaaaa, transparent:
 // need to import this function that is used in the main script and also in planet setup
 import { selectPlanet } from './script.js';
 
+// Set the colors for each of the genres
 const genreColors = {
-        'rock': 0x0000ff,       // Blue
-        'pop': 0xffff00,        // Yellow
-        'classical': 0xffa500,  // Orange
-        'hiphop': 0xff00ff,     // Magenta
-        'country': 0x00ff00,    // Green
-        'latin': 0x8a2be2,      // Blue Violet
-        'edm_dance': 0x808080,  // Gray
-        'jazz': 0xffc0cb        // Pink
-    };
+    'rock': 0xff4500,       // Orange Red
+    'pop': 0x00ff00,        // Lime Green
+    'classical': 0xffff00,  // Yellow
+    'hiphop': 0x00ffff,     // Cyan
+    'country': 0xff00ff,    // Magenta
+    'latin': 0xffd700,      // Gold
+    'edm_dance': 0x8a2be2,  // Blue Violet
+    'jazz': 0x00ff7f        // Spring Green
+};
 
-/* Function to Create Text  */
+
+/* Function to Create Text box above each planet */
 function createTextTexture(text) {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -41,6 +43,8 @@ function createTextTexture(text) {
     texture.magFilter = THREE.LinearFilter;
     return texture;
 }
+
+
 
 async function createPlanets(tracks,scene,welcomeMessage) {
 
@@ -62,7 +66,7 @@ async function createPlanets(tracks,scene,welcomeMessage) {
             const info = genreInfos.find(i => i.url === t.track.preview_url);
             if (!info) continue;
 
-            const { genre, tempo, loudness,x,z } = info;
+            const { genre,x,z } = info;
             const noise3D = createNoise3D();
             const radius = 12;
 
@@ -78,27 +82,22 @@ async function createPlanets(tracks,scene,welcomeMessage) {
             // Displace vertices to create terrain
             const positionAttribute = geometry.getAttribute('position');
             const colors = [];
-            const seaLevel = 0.05;
+            const seaLevel = 0.02;
 
             for (let i = 0; i < positionAttribute.count; i++) {
                 const vertex = new THREE.Vector3();
                 vertex.fromBufferAttribute(positionAttribute, i);
 
                 const noiseScale = 0.2;
-                const noiseValue = noise3D(
-                    vertex.x * noiseScale,
-                    vertex.y * (noiseScale/2),
-                    vertex.z * noiseScale
-                );
-
+                const noiseValue = noise3D(vertex.x * noiseScale,vertex.y * (noiseScale/2),vertex.z * noiseScale);
                 const displacementScale = 0.15;
                 const displacement = Math.pow(Math.abs(noiseValue), 1.5) * displacementScale;
                 vertex.normalize().multiplyScalar(radius * (1 + displacement));
 
                 let color;
-                if (displacement < seaLevel) {color = seaColor.clone().lerp(genreColor, 0.3);}
-                else if (displacement < seaLevel + 0.05) {color = landColor.clone().lerp(genreColor, 0.3);}
-                else {const t = (displacement - (seaLevel + 0.05)) / 0.1;color = landColor.clone().lerp(mountainColor, t).lerp(genreColor, 0.3);}
+                if (displacement < seaLevel) {color = seaColor.clone().lerp(genreColor, 0.5);}
+                else if (displacement < seaLevel + 0.2) {color = landColor.clone().lerp(genreColor, 0.2);}
+                else {const t = (displacement - (seaLevel + 0.2)) / 0.1; color = landColor.clone().lerp(mountainColor, t).lerp(genreColor, 0.2);}
                 colors.push(color.r, color.g, color.b);
                 positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
             }
@@ -133,10 +132,9 @@ async function createPlanets(tracks,scene,welcomeMessage) {
             particle.userData = {
                 preview_url: t.track.preview_url,
                 name: t.track.name,
+                artist: t.track.artists[0].name,
                 textSprite: textSprite,
-                genre: genre,
-                tempo: tempo,
-                loudness: loudness
+                genre: genre
             };
         }
 
@@ -213,46 +211,40 @@ function animateLines() {
     requestAnimationFrame(animateLines);
 }
 
-function updateParticleSize(particle, loudness) {
-    // Normalize loudness to a reasonable scale factor
-    // Assuming loudness is typically between -60 and 0 dB
-    const minLoudness = -60;
-    const maxLoudness = 0;
-    const minScale = 1;
-    const maxScale = 1.5;
+function updateParticleSize(newParticle, oldParticle) {
 
-    const normalizedLoudness = (loudness - minLoudness) / (maxLoudness - minLoudness);
-    const scaleFactor = 1.5;
+    // Resize the new particle
+    gsap.to(newParticle.scale, {duration: 1.5,x: 1.5,y: 1.5,z: 1.5,ease: "power2.out"});
 
-    // Animate the scale change
-    gsap.to(particle.scale, {
-        duration: 0.5, // Half a second for smooth transition
-        x: scaleFactor,
-        y: scaleFactor,
-        z: scaleFactor,
-        ease: "power2.out" // Smooth easing function
-    });
+    // If there's an old particle, resize it back to original size
+    if (oldParticle && oldParticle !== newParticle) {
+        gsap.to(oldParticle.scale, {duration: 1.5,x: 1,y: 1,z: 1,ease: "power2.out"});
+    }
 }
 
-function updateDisplayBox(selectedParticle, connectedParticles, displayBox) {
-    let html = `<h3>Selected Song: ${selectedParticle.userData.name}</h3>`;
-    html += `<h4>Genre: ${selectedParticle.userData.genre}</h4>`;
+
+//
+function updateDisplayBox(selectedParticle, connectedParticles, displayBox,playingParticle) {
+    let html = `<h3> ${selectedParticle.userData.name}</h3>`;
+    html += `<h3>${selectedParticle.userData.artist}</h3>`;
+    html += `<h4>Predicted Genre: ${selectedParticle.userData.genre}</h4>`;
     html += '<h3>Connected Songs:</h3>';
     html += '<ul>';
-
     connectedParticles.forEach((particle, index) => {
-        html += `<li data-index="${index}" class="song-entry">${particle.userData.name} - ${particle.userData.genre}</li>`;
-    });
+            const genreColor = genreColors[particle.userData.genre];
+            const colorHex = `#${genreColor.toString(16).padStart(6, '0')}`;  // Convert to hexadecimal color string
+            html += `<li data-index="${index}" class="song-entry" style="background-color: ${colorHex};">${particle.userData.name} - ${particle.userData.genre}</li>`;
+        });
 
-    html += '</ul>';
-    displayBox.innerHTML = html;
+        html += '</ul>';
+        displayBox.innerHTML = html;
 
     // Add click event listeners to song entries
     document.querySelectorAll('.song-entry').forEach(entry => {
         entry.addEventListener('click', function() {
             const index = this.getAttribute('data-index');
             const particle = connectedParticles[index];
-            selectPlanet(particle);
+            selectPlanet(particle,playingParticle);
         });
     });
 }

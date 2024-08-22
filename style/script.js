@@ -1,6 +1,6 @@
 //  Author: Daragh Sweeney
 //  Project: Large Music Data Visualization
-//  script.js: this is the main javascript file
+//  script.js: this is the main javascript file for the dashboard page
 
 // Get the objects from HTML page
 const displayBox = document.getElementById('display-content');
@@ -28,12 +28,14 @@ animateLines();
 /* The animation loop is used */
 function animate(time) {
     requestAnimationFrame(animate);
+
+    // slight rotation of the camera around the sun
     camera.position.x = camera.position.x * Math.cos(0.0001) - camera.position.z * Math.sin(0.0001);
     camera.position.z = camera.position.z * Math.cos(0.0001) + camera.position.x * Math.sin(0.0001);
     controls.update();
     updateSunGlow(time * 0.001,glowMaterial,lightSphere);
 
-    // Animate nebula
+    // Animate nebula and shooting stars
     cloudParticles.forEach((p, index) => {p.rotation.x += 0.0001 + index * 0.00005;p.rotation.y += 0.0001 + index * 0.00005;p.rotation.z += 0.0001 + index * 0.00005;});
     updateShootingStars(shootingStars);
     renderer.render(scene, camera);
@@ -74,34 +76,42 @@ function onMouseClick(event) {
         if (selectedObject instanceof THREE.Sprite) {
             selectedObject = selectedObject.parent;
         }
-        selectPlanet(selectedObject);
+
+        selectPlanet(selectedObject,playingParticle);
+        playingParticle = selectedObject;
     }
 }
 
-export function selectPlanet(selectedObject) {
+
+// The select planet function is called when a planet is selected
+export function selectPlanet(selectedObject,playingParticle) {
     const previewUrl = selectedObject.userData.preview_url;
 
+
+    // we check to see if we have clicked on the same planet
     if (audio.src !== previewUrl) {
         audio.src = previewUrl;
-        currentSongElement.textContent = selectedObject.userData.name || 'Unknown song';
+        currentSongElement.textContent = '';
         playPauseButton.textContent = 'Pause';
         wavesurfer.load(previewUrl);
-
-        if (playingParticle) {updateParticleSize(playingParticle, -60);}
-        updateParticleSize(selectedObject, selectedObject.userData.loudness);
+        updateParticleSize(selectedObject, playingParticle);
+        playingParticle = selectedObject;
 
     }
 
     else {wavesurfer.playPause();}
 
-    playingParticle = selectedObject;
-    const closestParticles = findClosestParticles(playingParticle, 5);
-    drawLines(playingParticle, closestParticles,scene);
-    updateDisplayBox(selectedObject, closestParticles,displayBox);
+
+    const closestParticles = findClosestParticles(selectedObject, 5);
+    drawLines(selectedObject, closestParticles,scene);
+    updateDisplayBox(selectedObject, closestParticles,displayBox,playingParticle);
 
     // Animate camera to the selected particle
     gsap.to(camera.position, {
         duration: 1.5,
+        // particles are in negative and positive positions on x and z axis
+        // for x and z axis we make sure we are moving away from the sun depending on where particle is
+        // for y axis we always want it positive and above planet
         x: selectedObject.position.x >= 0 ? selectedObject.position.x + 50 : selectedObject.position.x - 50,
         y: selectedObject.position.y + 75,
         z: selectedObject.position.z >= 0 ? selectedObject.position.z + 50 : selectedObject.position.z - 50,
@@ -113,6 +123,7 @@ export function selectPlanet(selectedObject) {
 
     });
 
+    // the camera pans to new position in 1.5 seconds
     gsap.to(controls.target, {
         duration: 1.5,
         x: selectedObject.position.x,
@@ -121,22 +132,6 @@ export function selectPlanet(selectedObject) {
         onUpdate: function() {controls.update();}
     });
 }
-
-
-
-
-
-
-wavesurfer.on('audioprocess', function() {
-    if (playingParticle && wavesurfer.backend && wavesurfer.backend.peaks) {
-        const peaks = wavesurfer.backend.peaks;
-        if (peaks && peaks.length > 0) {
-            const loudness = peaks.reduce((a, b) => Math.max(Math.abs(a), Math.abs(b))) * playingParticle.userData.loudness;
-            console.log(loudness);
-            updateParticleSize(playingParticle, loudness);
-        }
-    }
-});
 
 
 /* calls on mouse click function */

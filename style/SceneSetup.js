@@ -11,7 +11,7 @@ export function initScene() {
     /* set up the  scene and add controls for the camera */
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-    camera.position.z = 1000; // Camera Position
+    camera.position.z = 1000; // Camera z Position
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x051e2b);
@@ -44,8 +44,8 @@ export function initScene() {
          shootingStars.push(star);
      }
 
+    /* Function to make the camera move towards the sun */
      animateCamera(camera);
-
 
 
 
@@ -68,7 +68,7 @@ function createStarfield() {
     const minRadius = 700;
     const yScale = 0.25;
 
-    //we add 2000 stars to the scene
+    //we add 2000 stationary stars to the scene
     for (let i = 0; i < 2000; i++) {
         const r = Math.random() * (radius - minRadius) + minRadius;
         const theta = Math.random() * Math.PI * 2;
@@ -154,7 +154,6 @@ function createSun() {
     lightSphere.add(glowMesh);
 
     return {glowMaterial,lightSphere}
-
 }
 
 
@@ -215,36 +214,49 @@ function createNebula(){
     });
 
     // Additional lighting for nebula effect
-    let ambientLight = new THREE.AmbientLight(0x555555, 0.6);
+    let ambientLight = new THREE.AmbientLight(0x555555, 1);
     scene.add(ambientLight);
-
     let hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.5);
     scene.add(hemisphereLight);
-
     let softLight = new THREE.DirectionalLight(0xffffff, 0.2);
     softLight.position.set(1, 1, 1).normalize();
     scene.add(softLight);
-
     let planetLight = new THREE.DirectionalLight(0xffffff, 0.6);
     planetLight.position.set(200, 200, 200);
     scene.add(planetLight);
 
+    //first set of nebula lights
     let orangeLight = new THREE.PointLight(0xcc6600, 100, 2000, 1.7);
     orangeLight.position.set(1000, 1500, 500);
+    orangeLight.decay = 3;
     scene.add(orangeLight);
-
     let redLight = new THREE.PointLight(0xd8547e, 100, 2000, 1.7);
     redLight.position.set(500, 1500, 500);
+    redLight.decay = 3;
     scene.add(redLight);
-
     let blueLight = new THREE.PointLight(0x3677ac, 100, 2000, 1.7);
     blueLight.position.set(1500, 1500, 1000);
+    blueLight.decay = 3;
     scene.add(blueLight);
+
+    //second set of nebula lights
+    let orangeLight2 = new THREE.PointLight(0xcc6600, 100, 2000, 1.7);
+    orangeLight2.position.set(-1500, -1500, -1000);
+    orangeLight2.decay = 3;
+    scene.add(orangeLight2);
+    let redLight2 = new THREE.PointLight(0xd8547e, 100, 2000, 1.7);
+    redLight2.position.set(-1500, -1500, -1000);
+    redLight2.decay = 3;
+    scene.add(redLight2);
+    let blueLight2 = new THREE.PointLight(0x3677ac, 100, 2000, 1.7);
+    blueLight2.position.set(-1500, -1500, -1000);
+    blueLight2.decay = 3;
+    scene.add(blueLight2);
 
     return cloudParticles;
 }
 
-
+/* Create the shooting stars in the background */
 function createShootingStar() {
     const particleCount = 20;
     const particles = new Float32Array(particleCount * 3);
@@ -267,6 +279,7 @@ function createShootingStar() {
     return star;
 }
 
+/* Function to update the shooting stars in the background */
 export function updateShootingStars(shootingStars) {
     shootingStars.forEach(star => {
         star.position.add(star.velocity);
