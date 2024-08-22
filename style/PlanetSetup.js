@@ -45,9 +45,11 @@ function createTextTexture(text) {
 }
 
 
-
+// This function is used to create the planets
 async function createPlanets(tracks,scene,welcomeMessage) {
 
+
+    // fetch the track ifo from the server
     async function fetchGenres(mp3paths) {
         const urlArray = Array.isArray(mp3paths) ? mp3paths : [mp3paths];
         const queryString = urlArray.map(url => `previewUrl=${encodeURIComponent(url)}`).join('&');
@@ -185,6 +187,8 @@ const flashingLineMaterial = new THREE.ShaderMaterial({
     linewidth: 5 // Set line width
 });
 
+
+
 // Function to Draw Lines Between Particles
 function drawLines(particle, closestParticles,scene) {
     lines.forEach(line => scene.remove(line));
@@ -207,10 +211,12 @@ function drawLines(particle, closestParticles,scene) {
 
 // Animation loop for flashing effect
 function animateLines() {
-    flashingLineMaterial.uniforms.time.value += 0.01; // Adjust the speed of flashing
+    flashingLineMaterial.uniforms.time.value += 0.01;
     requestAnimationFrame(animateLines);
 }
 
+
+// updates the particle size when a new particle is selected
 function updateParticleSize(newParticle, oldParticle) {
 
     // Resize the new particle
@@ -223,7 +229,7 @@ function updateParticleSize(newParticle, oldParticle) {
 }
 
 
-//
+//  updates the dashboard when a new song is selected
 function updateDisplayBox(selectedParticle, connectedParticles, displayBox,playingParticle) {
     let html = `<h3> ${selectedParticle.userData.name}</h3>`;
     html += `<h3>${selectedParticle.userData.artist}</h3>`;
@@ -249,4 +255,5 @@ function updateDisplayBox(selectedParticle, connectedParticles, displayBox,playi
     });
 }
 
+//export all relevant feature to the main javascript page
 export {createPlanets,particles,lines,animateLines,findClosestParticles,drawLines,updateDisplayBox,updateParticleSize};

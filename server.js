@@ -128,7 +128,7 @@ app.get("/dashboard", async (req, res) => {
 
 
 
-// this is the getGenre
+// The
 app.get('/getGenre', (req, res) => {
   const { previewUrl } = req.query;
 

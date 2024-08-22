@@ -61,6 +61,8 @@ wavesurfer.on('ready', function () {
 });
 
 
+
+// Function to see if a user clicks on a planet
 function onMouseClick(event) {
     event.preventDefault();
 

@@ -1,8 +1,11 @@
 //  Author: Daragh Sweeney
 //  Project: Large Music Data Visualization
+//  SceneSetup.js: This creates the Three.js scene
 
 let scene, camera, renderer, controls;
 
+
+// Here we initiate the scene
 export function initScene() {
 
     /* event listener to direct user to logout page */
@@ -256,6 +259,9 @@ function createNebula(){
     return cloudParticles;
 }
 
+
+
+
 /* Create the shooting stars in the background */
 function createShootingStar() {
     const particleCount = 20;
@@ -278,6 +284,9 @@ function createShootingStar() {
 
     return star;
 }
+
+
+
 
 /* Function to update the shooting stars in the background */
 export function updateShootingStars(shootingStars) {
