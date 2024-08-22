@@ -36,5 +36,5 @@ Procedurally Generated Navigable Environment Based on Extracted Features from Mu
 
 
 ## Run Application
-To run the application simply go to the root directory and run the command: npm run start
-open a web browser and navigate to the appropriate page to use application
+- To run the application simply go to the root directory and run the command: npm run start
+- Open a web browser and navigate to the appropriate page to use application
